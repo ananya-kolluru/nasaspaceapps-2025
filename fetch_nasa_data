@@ -50,6 +50,7 @@ try:
             "size": batch_size,
             "sort": "Accession:asc"
         }
+        
         # The API uses a POST request
         response = requests.post(API_URL, headers=HEADERS, data=json.dumps(PAYLOAD))
         response.raise_for_status()  # Raise an exception for bad status codes (4xx or 5xx)
@@ -68,12 +69,82 @@ try:
         #if hits and data['hits']['hits']: -> need to check for empty dict/list?
         for hit in hits:
             source = hit.get('_source', {})
+            
+            # We are interested in the study's accession number (Identifier), and some other details incl (abstract)
+            accession = source.get('Accession') #This seems to be same as 'Study Identifier', but check back on datasets
+            study_title = source.get('Study Title')
+            study_desc = source.get('Study Description')
+            protocol_desc = source.get('Study Protocol Description')
+            
+            # Add all records to the list first
+            studies_data.append({
+                'accession': accession,
+                'title': study_title,
+                'description': study_desc,
+                'abstract': protocol_desc
+            })
+            
+        # check studies fetched
+        num_in_batch = len(hits)
+        print(f"Fetched a batch of {num_in_batch} studies. Total studies fetched so far: {len(studies_data)}")
 
-        #TBD write code here to fetch the required fields
+        current_from += batch_size
+        # If the num of items returned is less than the batch size, this is the last page.
+        if len(studies_data) >= total_studies_to_fetch:
+            print(f"Fetched {str(len(studies_data))}")
+            break;
+            
+        # Create a Pandas DataFrame for easier manipulation:
+    if studies_data:
+        #df_studies = pd.DataFrame(studies_data).drop_duplicates(subset=["accession"], keep="first") #Always results in 25 records??
+        df_studies = pd.DataFrame(studies_data)
+        print(f"[collect] rows={len(df_studies)} unique_accessions={df_studies['accession'].nunique() if not df_studies.empty else 0}")
 
+        print(f"Successfully fetched and processed {len(df_studies)} studies.")
+        # --- Handle missing and empty data using pandas ---
+        # Replace empty strings with pandas' NA value
+        df_studies.replace([''], pd.NA, inplace=True)
+
+        original_count = len(df_studies)
+        # Drop rows where 'accession' or 'description' is missing
+        df_studies.dropna(subset=['accession', 'description'], inplace=True)
+        
+        print(f"Successfully fetched {original_count} studies from the API.")
+        print(f"Filtered down to {len(df_studies)} studies with valid Accessions and Study Descriptions.")
+    
+    else:
+        print("Could not find 'studies' in the API response or the list is empty.")
+        df_studies = pd.DataFrame() # Create an empty dataframe to avoid errors later
+
+    print(f"IN: {inspect.currentframe().f_code.co_name}: FETCHED {str(len(studies_data))} STUDIES.")
+        
 except RequestException as e:
     print(f"An error occurred while fetching data from the API: {e}")
     df_studies = pd.DataFrame() # Create an empty dataframe
+
+except ValueError:
+    print("Failed to decode JSON from the response. The response may not be in the expected format.")
+    df_studies = pd.DataFrame() # Create an empty dataframe
+
+# Display the first few rows of the dataframe
+#if not df_studies.empty:
+#    print("\nFirst 5 studies fetched:")
+#    print(df_studies.head()) 
+
+
+# Saving the DataFrame to a Parquet file allows for efficient storage
+# and faster retrieval later compared to formats like CSV.
+
+if not df_studies.empty:
+    file_name = PARQUET_FILE
+    print(f"\nSaving DataFrame to Parquet file: {file_name}...")
+    try:
+        df_studies.to_parquet(file_name, engine="fastparquet", compression = 'SNAPPY', index=False) #does this always overwrite?
+        print(f"Successfully saved data to {file_name}")
+    except Exception as e:
+        print(f"An error occurred while saving to Parquet: {e}")
+else:
+    print("\nSkipping save to Parquet because the DataFrame is empty.")
 
 except ValueError:
     print("Failed to decode JSON from the response. The response may not be in the expected format.")
