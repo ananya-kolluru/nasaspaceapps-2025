@@ -1,0 +1,22 @@
+# Make sure these dependancies are run from the terminal
+# !pip install requests pandas keybert sentence-transformers pyarrow 
+# !pip install matplotlib scikit-learn 
+
+
+print("Libraries (requests, pandas, keybert, sentence-transformers) imported using:")
+print("pip install requests pandas keybert sentence-transformers.. from the terminal")
+
+#importing all required libraries
+import requests
+import pandas as pd
+from keybert import KeyBERT
+from requests.exceptions import RequestException
+import textwrap
+import json
+import os
+import inspect
+#Parquet dependencies
+import pyarrow #ensure pip install pyarrow was run
+from fastparquet import ParquetFile #ensure pip install fastparquet was run
+
+print("Imports successful.")
