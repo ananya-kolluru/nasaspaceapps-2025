@@ -1,8 +1,6 @@
 # Make sure these dependancies are run from the terminal
 # !pip install requests pandas keybert sentence-transformers pyarrow 
 # !pip install matplotlib scikit-learn 
-
-
 print("Libraries (requests, pandas, keybert, sentence-transformers) imported using:")
 print("pip install requests pandas keybert sentence-transformers.. from the terminal")
 
@@ -20,3 +18,63 @@ import pyarrow #ensure pip install pyarrow was run
 from fastparquet import ParquetFile #ensure pip install fastparquet was run
 
 print("Imports successful.")
+
+# We will query the NASA GeneLab API to get a list of all studies.
+# The new API endpoint requires a POST request with a JSON payload.
+API_URL = "https://genelab-data.ndc.nasa.gov/genelab/data/search
+HEADERS = {'Content-Type': 'application/json'}
+JSON_PATH = "genelab_fetch.json"
+studies_data = []
+current_from = 0
+batch_size = 500
+total_studies_to_fetch = 600
+PARQUET_FILE = 'temp_nasa_osdr_studies.parquet'
+
+
+print(f"Fetching data from NASA GeneLab API in batches...")
+
+PAYLOAD = {
+    "query": "",
+    "type": "studies",
+    "from": current_from,
+    "size": batch_size,
+    "sort": "accession:asc"
+}
+try:
+    
+    while True:  # run in a loop till no data is returned
+        PAYLOAD = {
+            "query": "",
+            "type": "studies",
+            "from": current_from,
+            "size": batch_size,
+            "sort": "Accession:asc"
+        }
+        # The API uses a POST request
+        response = requests.post(API_URL, headers=HEADERS, data=json.dumps(PAYLOAD))
+        response.raise_for_status()  # Raise an exception for bad status codes (4xx or 5xx)
+    
+        data = response.json()
+        _save_json(JSON_PATH, data)
+
+        # The study data is nested under ['hits']['hits']
+        # print(f"IN {inspect.currentframe().f_code.co_name}: checking hits")
+        hits = data.get('hits', {}).get('hits', [])
+        
+        if not hits:
+            print("No more study data, stopping!")
+            break  # we can exit the 'while TRUE' loop
+            
+        #if hits and data['hits']['hits']: -> need to check for empty dict/list?
+        for hit in hits:
+            source = hit.get('_source', {})
+
+        #TBD write code here to fetch the required fields
+
+except RequestException as e:
+    print(f"An error occurred while fetching data from the API: {e}")
+    df_studies = pd.DataFrame() # Create an empty dataframe
+
+except ValueError:
+    print("Failed to decode JSON from the response. The response may not be in the expected format.")
+    df_studies = pd.DataFrame() # Create an empty dataframe
