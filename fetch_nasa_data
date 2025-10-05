@@ -149,3 +149,40 @@ else:
 except ValueError:
     print("Failed to decode JSON from the response. The response may not be in the expected format.")
     df_studies = pd.DataFrame() # Create an empty dataframe
+
+# Display the first few rows of the dataframe
+#if not df_studies.empty:
+#    print("\nFirst 5 studies fetched:")
+#    print(df_studies.head()) 
+
+
+# Saving the DataFrame to a Parquet file allows for efficient storage
+# and faster retrieval later compared to formats like CSV.
+
+if not df_studies.empty:
+    file_name = PARQUET_FILE
+    print(f"\nSaving DataFrame to Parquet file: {file_name}...")
+    try:
+        df_studies.to_parquet(file_name, engine="fastparquet", compression = 'SNAPPY', index=False) #does this always overwrite?
+        print(f"Successfully saved data to {file_name}")
+    except Exception as e:
+        print(f"An error occurred while saving to Parquet: {e}")
+else:
+    print("\nSkipping save to Parquet because the DataFrame is empty.")
+ 
+# This cell demonstrates how to quickly load the data back from the
+# Parquet file into a new pandas DataFrame.
+
+file_name = PARQUET_FILE
+if os.path.exists(file_name):
+    print(f"\nLoading data from {file_name}...")
+    try:
+        df_retrieved = pd.read_parquet(file_name, engine="fastparquet")
+        print("Successfully loaded data from Parquet file.")
+        print("\nFirst 5 rows of retrieved data:")
+        print(df_retrieved.head())
+        
+    except Exception as e:
+        print(f"An error occurred while reading the Parquet file: {e}")
+else:
+    print(f"\nParquet file '{file_name}' not found. Please create file first.")
