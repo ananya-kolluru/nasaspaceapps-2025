@@ -10,10 +10,10 @@ For this challenge, we have 2 working versions: one that used the CSV file provi
 For the first item, we downloaded the provided CSV file that contained titles and links to 608 publications. We then fetchced the actual abstracts of every publication into our local pandas dataframe and fed the abstracts to the keyword extraction program. This solution is in files data_preparation.py and app.py. All screenshots in the presentation demo made for the project are for this solution.
 - run data_preparation.py (python data_preparation.py)
 - run app.py (streamlit run app.py)
-- Need the csv file
+- Need the csv file (SB_publication_PMC.csv)
 - The dashboard opens (default) at http://localhost:8501/
 
-For the second solution (not our main focus), we  used Gemini to query NASA GeneLab API using JSON and Pandas Data frames to analyze the data. 
+For the second solution (not our main focus), we  used Gemini to query NASA GeneLab API using JSON and Pandas Data frames to analyze the data. The files used for this were fetch_nasa_data.py, keyword_extract.py)
 
 In both solutions, once we had all the titles and abstracts in our dataframe, we ran it through Scikit-learn and used the model allenai/scibert_scivocab_uncased to get embeddings and transformed it to UMAP 2D shape. We completely relied in Gemini to come up with these models based on very specifc prompts to focus on space/scientific publications).
 
